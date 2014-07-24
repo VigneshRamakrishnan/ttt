@@ -1,0 +1,197 @@
+<html>
+  <head>
+  	<link type="text/css" rel="stylesheet" href="test.css"/>
+    <title>Game</title>
+ </head>
+ <body onload = "init();">
+ 	<script type="text/javascript">
+ 	// function init()
+  //   {
+  //   	// alert("start");
+  //     document.getElementById('game').style.visibility="hidden";
+  //     var name = document.getElementById('mm');
+  //     name.addEventListener('click', functioni);
+  //   }
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    var p1 = "";
+    var p2 = "";
+    var painted;
+    var content;
+    var winningCombinations;
+    var turn = 0;
+    var t = 0;
+    var theDiv;
+    var c;
+    var cxt;
+    var squaresFilled = 0;
+    var w;
+    var y;
+    var a = 0;
+    var bool = true;
+    function init()
+    {
+      painted = new Array();
+      content = new Array();
+      winningCombinations = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; 
+      for(var l = 0; l <= 8; l++)
+      {
+      painted[l] = false;
+      content[l]='';
+      }
+      document.getElementById('game').style.visibility="hidden";
+      var name = document.getElementById('mm');
+      name.addEventListener('click', functioni);
+    }
+    var socket = io();
+    socket.user = "";
+  	function functioni(e)
+  	{
+  		e.preventDefault();
+  		socket.user = document.getElementById('m').value;
+  		socket.emit('client detail', socket.user);
+  		socket.emit('display');
+  	}
+  	socket.on('lista', function(list,users){ 
+  		var searchBtn = document.createElement("input");
+  		searchBtn.setAttribute("type","button");
+  		// document.getElementById("tt").value = "";
+  		for(key in list)
+  		{
+  			// document.getElementById("tt").value += key;
+  			searchBtn.setAttribute("name",key);
+  			searchBtn.setAttribute("value",key);
+        searchBtn.setAttribute("id",key);
+  			searchBtn.setAttribute("onclick","OnQuery(event)");
+  			if(key != document.getElementById("m").value && users[key].connected == false )
+  				bool = true;
+  			else
+  				bool = false;
+  		}
+  		if(bool == true)
+  			document.body.appendChild(searchBtn);		
+  	});
+  	function OnQuery(e)
+  	{
+  		socket.emit('call client',{ op:e.target.value , cu: document.getElementById("m").value });
+  	}
+    function divClicked(num)
+    {
+      if(t == 0 && socket.user == p1)
+      {
+      socket.emit('divclicked', num, t);
+      }
+      else if(t == 1 && socket.user == p2)
+      {
+        socket.emit('divclicked', num, t);
+        // alert("Its not your turn");
+      }
+      else
+        alert("Its not your turn");
+      // socket.emit('divclicked', num);
+      return false;
+    }
+  	socket.on('to socket', function(name){
+  		var c = confirm(name + "wants to challenge you");
+  		if(c == true)
+  		{
+  			socket.emit('accepted', {cu: document.getElementById("m").value, op: name});
+        p1 = name;
+        p2 = document.getElementById("m").value;
+  		}
+  	});
+  	socket.on('confirm',function(name2,name1){
+  		alert(name2 + " " + "has accepted your challenge");
+      p1 = name1;
+      p2 = name2;
+      socket.emit('disable buttons', name1, name2);
+  	});
+    socket.on('disable',function(a, b){;
+      if(document.getElementById(a) != null)
+      document.getElementById(a).disabled= document.getElementById(a) || true;
+      if(document.getElementById(b) != null)      
+      document.getElementById(b).disabled= document.getElementById(b) || true;
+    });
+    socket.on('play',function(){
+    document.getElementById('game').style.visibility="visible";
+    });
+    socket.on('divputsymbol',function(num, s){
+      t = s;
+     if(painted[num-1] ==false)
+      {
+        if(turn % 2 == 0)
+        {
+          document.getElementById("div"+ num).innerText = "X";
+          content[num-1] = 'X';
+        }
+        else
+        {
+          document.getElementById("div"+ num).innerText = "O";
+          content[num-1] = 'O';
+        }
+        turn += 1;
+      }
+      else
+      {
+        alert("Space already occupied");
+      }
+      painted[num-1] = true;
+      checkForWinners(content[num-1]);
+    });
+    socket.on('win',function(){
+      alert("you won");
+    });
+    socket.on('lose',function(){
+      alert("you lost");
+    });
+    socket.on('reload',function(){
+      location.reload();
+    });
+    socket.on('update',function(k){
+      // alert(k);
+      if(document.getElementById(k) != null)
+        document.getElementById(k).remove();
+    });
+     function checkForWinners(symbol)
+      {
+      for(var a = 0; a < winningCombinations.length; a++)
+        {
+        if(content[winningCombinations[a][0]]==symbol && content[winningCombinations[a][1]]== symbol && content[winningCombinations[a][2]]==symbol)
+          {
+              document.getElementById("div" + (winningCombinations[a][0] + 1)).style.backgroundColor = "green";
+              document.getElementById("div" + (winningCombinations[a][1] + 1)).style.backgroundColor = "green";
+              document.getElementById("div" + (winningCombinations[a][2] + 1)).style.backgroundColor = "green";
+            if(symbol == 'X')
+            {
+            socket.emit('won', p1, p2);
+            console.log('player1:'+p1);
+            console.log('player2:'+p2);
+            }
+            else
+              socket.emit('won', p2, p1);
+
+              socket.emit('refresh');
+
+          }
+        }
+      }
+ 	</script>
+ 	<ul id="messages"></ul>
+    	<form id = "kk" action="">
+    	<input id="m" autocomplete="off" /><button id ="mm">Send</button>
+    </form>
+    <div id="game">
+      <div id = "div1" onclick="divClicked(1)"></div>
+      <div id = "div2" onclick="divClicked(2)"></div>
+      <div id = "div3" onclick="divClicked(3)"></div>
+      <div id = "div4" onclick="divClicked(4)"></div>
+      <div id = "div5" onclick="divClicked(5)"></div>
+      <div id = "div6" onclick="divClicked(6)"></div>
+      <div id = "div7" onclick="divClicked(7)"></div>
+      <div id = "div8" onclick="divClicked(8)"></div>
+      <div id = "div9" onclick="divClicked(9)"></div>
+    </div>
+ </body>
+ </html>

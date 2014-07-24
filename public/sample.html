@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+  	<link type="text/css" rel="stylesheet" href="sample.css"/>
+    <title>Game</title>
+ </head>
+ <body onload="init();">
+    <script>
+    function init()
+    {
+    	document.getElementById('game').style.display = 'none' ;
+      var name = document.getElementById('kk');
+      name.addEventListener('submit', functioni)
+    }
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    var socket = io();
+  	function functioni(e)
+  	{
+    	e.preventDefault();
+    	socket.emit('chat message');
+    	return false;
+  	}
+  	socket.on('chat message', function(){
+    // $('#messages').append($('<li>').text(msg));
+    alert("Game Started!")
+    // document.getElementById('game').display = block;
+    document.getElementById('game').style.display = 'block' ;
+  	});
+    </script>
+    <form id = "kk" action="">
+	<button id="btn">Start Game</button>
+    </form>
+    <div id="game">
+    	<div>asd</div>
+    	<div>asd</div>
+    	<div>ads</div>
+    	<div>asd</div>
+    	<div></div>
+    	<div></div>
+    	<div></div>
+    	<div></div>
+    	<div></div>
+    </div>
+
+</body>
+</html>
